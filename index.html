@@ -1,0 +1,630 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Diabetes Risk Calculator (ARIC)</title>
+
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    :root {
+      --primary: #0d6efd;
+      --primary-light: #3b82f6;
+      --safe: #22c55e;
+      --alert: #eab308;
+      --warning: #f97316;
+      --danger: #ef4444;
+      --text-muted: #94a3b8;
+      --border-color: #e2e8f0;
+      --bg-tertiary: #f1f5f9;
+    }
+    body { background: #f8fafc; }
+    .card { border-radius: 11px; }
+    
+    /* Toggle Switch */
+    .toggle-container {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+    }
+    .toggle-switch {
+        position: relative;
+        display: inline-block;
+        width: 40px;
+        height: 22px;
+    }
+    .toggle-switch input {
+        opacity: 0;
+        width: 0;
+        height: 0;
+    }
+    .toggle-slider {
+        position: absolute;
+        cursor: pointer;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background-color: #ccc;
+        transition: .3s;
+        border-radius: 20px;
+    }
+    .toggle-slider:before {
+        position: absolute;
+        content: "";
+        height: 16px;
+        width: 16px;
+        left: 3px;
+        bottom: 3px;
+        background-color: white;
+        transition: .3s;
+        border-radius: 50%;
+    }
+    input:checked + .toggle-slider {
+        background-color: var(--primary);
+    }
+    input:checked + .toggle-slider:before {
+        transform: translateX(18px);
+    }
+    .toggle-label {
+        font-size: 12px;
+        font-weight: 500;
+        min-width: 26px;
+    }
+    
+    /* Slider Styles */
+    .input-group {
+        margin-bottom: 12px;
+    }
+    .input-label {
+        display: block;
+        font-size: 12px;
+        font-weight: 500;
+        color: #1e293b;
+        margin-bottom: 4px;
+    }
+    .unit-label {
+        font-weight: 400;
+        color: #64748b;
+    }
+    .slider-container {
+        position: relative;
+        padding-bottom: 16px;
+    }
+    .slider {
+        -webkit-appearance: none;
+        appearance: none;
+        width: 100%;
+        height: 6px;
+        background: transparent;
+        outline: none;
+        position: relative;
+        z-index: 2;
+        cursor: pointer;
+    }
+    .slider::-webkit-slider-thumb {
+        -webkit-appearance: none;
+        appearance: none;
+        width: 15px;
+        height: 15px;
+        border-radius: 50%;
+        background: var(--primary);
+        cursor: pointer;
+        box-shadow: 0 2px 4px rgba(37, 99, 235, 0.4);
+        border: 2px solid white;
+    }
+    .slider::-moz-range-thumb {
+        width: 15px;
+        height: 15px;
+        border-radius: 50%;
+        background: var(--primary);
+        cursor: pointer;
+        box-shadow: 0 2px 4px rgba(37, 99, 235, 0.4);
+        border: 2px solid white;
+    }
+    .slider-track {
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        height: 6px;
+        border-radius: 3px;
+        background: var(--bg-tertiary);
+        overflow: hidden;
+        display: flex;
+        pointer-events: none;
+    }
+    .slider-fill {
+        height: 100%;
+        background: linear-gradient(90deg, var(--primary-light), var(--primary));
+        border-radius: 3px;
+        transition: width 0.1s ease;
+        pointer-events: none;
+    }
+    .slider-segment {
+        height: 100%;
+    }
+    .slider-segment.safe { background: var(--safe); }
+    .slider-segment.alert { background: var(--alert); }
+    .slider-segment.warning { background: var(--warning); }
+    .slider-segment.danger { background: var(--danger); }
+    .slider-labels {
+        display: flex;
+        justify-content: space-between;
+        margin-top: 3px;
+        font-size: 10px;
+        color: var(--text-muted);
+    }
+    .value-display {
+        display: flex;
+        align-items: center;
+        gap: 5px;
+        margin-top: 4px;
+    }
+    .value-display input {
+        width: 62px;
+        padding: 4px 8px;
+        border: 1px solid var(--border-color);
+        border-radius: 5px;
+        font-size: 12px;
+        font-weight: 500;
+        text-align: center;
+    }
+    .value-display input:focus {
+        outline: none;
+        border-color: var(--primary);
+        box-shadow: 0 0 0 2px rgba(37, 99, 235, 0.1);
+    }
+    .value-unit {
+        font-size: 11px;
+        color: #64748b;
+    }
+  </style>
+</head>
+<body class="p-4">
+  <div class="max-w-2xl mx-auto">
+    <div class="card p-5 shadow bg-white">
+      <div class="flex justify-between items-center mb-4">
+        <h1 class="text-xl font-bold">Diabetes Risk Calculator</h1>
+        <!-- Unit Toggle inline -->
+        <div class="flex items-center gap-2 text-sm">
+          <span>Units:</span>
+          <div class="toggle-container">
+            <span class="toggle-label" id="unit-label-us" style="font-weight: 700;">US</span>
+            <label class="toggle-switch">
+              <input type="checkbox" id="unit-toggle" onchange="toggleUnits()">
+              <span class="toggle-slider"></span>
+            </label>
+            <span class="toggle-label" id="unit-label-si">SI</span>
+          </div>
+        </div>
+      </div>
+     
+      <div class="grid grid-cols-2 gap-x-5 gap-y-2">
+        <!-- Age -->
+        <div class="input-group">
+          <label class="input-label">Age</label>
+          <div class="slider-container">
+            <input type="range" id="age-slider" min="20" max="80" value="54" class="slider" oninput="updateValue('age')">
+            <div class="slider-track"><div class="slider-fill" id="age-fill"></div></div>
+            <div class="slider-labels"><span>20</span><span>50</span><span>80</span></div>
+          </div>
+          <div class="value-display">
+            <input type="number" id="age-value" value="54" min="20" max="80" onchange="updateSlider('age')">
+            <span class="value-unit">years</span>
+          </div>
+        </div>
+
+        <!-- Glucose -->
+        <div class="input-group">
+          <label class="input-label">Glucose <span class="unit-label" id="fg-unit">(mg/dL)</span></label>
+          <div class="slider-container">
+            <input type="range" id="fg-slider" min="50" max="300" value="97" step="1" class="slider" oninput="updateValue('fg')">
+            <div class="slider-track">
+              <div class="slider-segment safe" style="flex: 50"></div>
+              <div class="slider-segment alert" style="flex: 26"></div>
+              <div class="slider-segment danger" style="flex: 174"></div>
+            </div>
+            <div class="slider-labels"><span id="fg-min">50</span><span id="fg-mid">175</span><span id="fg-max">300</span></div>
+          </div>
+          <div class="value-display">
+            <input type="number" id="fg-value" value="97" step="1" onchange="updateSlider('fg')">
+            <span class="value-unit" id="fg-value-unit">mg/dL</span>
+          </div>
+        </div>
+
+        <!-- Blood Pressure -->
+        <div class="input-group">
+          <label class="input-label">Blood Pressure <span class="unit-label">(mmHg)</span></label>
+          <div class="slider-container">
+            <input type="range" id="sbp-slider" min="90" max="200" value="120" class="slider" oninput="updateValue('sbp')">
+            <div class="slider-track">
+              <div class="slider-segment safe" style="flex: 30"></div>
+              <div class="slider-segment alert" style="flex: 20"></div>
+              <div class="slider-segment warning" style="flex: 20"></div>
+              <div class="slider-segment danger" style="flex: 40"></div>
+            </div>
+            <div class="slider-labels"><span>Normal</span><span>Pre-HTN</span><span>Stage 1</span><span>Stage 2</span></div>
+          </div>
+          <div class="value-display">
+            <input type="number" id="sbp-value" value="120" min="90" max="200" onchange="updateSlider('sbp')">
+            <span class="value-unit">mmHg</span>
+          </div>
+        </div>
+
+        <!-- Waist Size -->
+        <div class="input-group">
+          <label class="input-label">Waist Size <span class="unit-label" id="waist-unit">(in)</span></label>
+          <div class="slider-container">
+            <input type="range" id="waist-slider" min="25" max="60" value="37" step="1" class="slider" oninput="updateValue('waist')">
+            <div class="slider-track">
+              <div class="slider-segment safe" style="flex: 12"></div>
+              <div class="slider-segment danger" style="flex: 23"></div>
+            </div>
+            <div class="slider-labels"><span id="waist-min">25</span><span id="waist-mid">42</span><span id="waist-max">60</span></div>
+          </div>
+          <div class="value-display">
+            <input type="number" id="waist-value" value="37" step="1" onchange="updateSlider('waist')">
+            <span class="value-unit" id="waist-value-unit">in</span>
+          </div>
+        </div>
+
+        <!-- Height -->
+        <div class="input-group">
+          <label class="input-label">Height <span class="unit-label" id="height-unit">(in)</span></label>
+          <div class="slider-container">
+            <input type="range" id="height-slider" min="48" max="84" value="66" step="1" class="slider" oninput="updateValue('height')">
+            <div class="slider-track"><div class="slider-fill" id="height-fill"></div></div>
+            <div class="slider-labels"><span id="height-min">48</span><span id="height-mid">66</span><span id="height-max">84</span></div>
+          </div>
+          <div class="value-display">
+            <input type="number" id="height-value" value="66" step="1" onchange="updateSlider('height')">
+            <span class="value-unit" id="height-value-unit">in</span>
+          </div>
+        </div>
+
+        <!-- HDL Cholesterol -->
+        <div class="input-group">
+          <label class="input-label">Good Cholesterol (HDL) <span class="unit-label" id="hdl-unit">(mg/dL)</span></label>
+          <div class="slider-container">
+            <input type="range" id="hdl-slider" min="20" max="100" value="50" step="1" class="slider" oninput="updateValue('hdl')">
+            <div class="slider-track">
+              <div class="slider-segment danger" style="flex: 20"></div>
+              <div class="slider-segment alert" style="flex: 20"></div>
+              <div class="slider-segment safe" style="flex: 40"></div>
+            </div>
+            <div class="slider-labels"><span>Low</span><span>Borderline</span><span>Good</span></div>
+          </div>
+          <div class="value-display">
+            <input type="number" id="hdl-value" value="50" step="1" onchange="updateSlider('hdl')">
+            <span class="value-unit" id="hdl-value-unit">mg/dL</span>
+          </div>
+        </div>
+
+        <!-- Triglycerides -->
+        <div class="input-group">
+          <label class="input-label">Triglycerides <span class="unit-label" id="trig-unit">(mg/dL)</span></label>
+          <div class="slider-container">
+            <input type="range" id="trig-slider" min="50" max="500" value="150" step="1" class="slider" oninput="updateValue('trig')">
+            <div class="slider-track">
+              <div class="slider-segment safe" style="flex: 100"></div>
+              <div class="slider-segment alert" style="flex: 50"></div>
+              <div class="slider-segment danger" style="flex: 300"></div>
+            </div>
+            <div class="slider-labels"><span id="trig-min">50</span><span id="trig-mid">275</span><span id="trig-max">500</span></div>
+          </div>
+          <div class="value-display">
+            <input type="number" id="trig-value" value="150" step="1" onchange="updateSlider('trig')">
+            <span class="value-unit" id="trig-value-unit">mg/dL</span>
+          </div>
+        </div>
+
+        <!-- Race Toggle -->
+        <div class="input-group">
+          <label class="input-label">Race</label>
+          <div class="toggle-container">
+            <span class="toggle-label">Other</span>
+            <label class="toggle-switch">
+              <input type="checkbox" id="race-toggle" onchange="updateResults()">
+              <span class="toggle-slider"></span>
+            </label>
+            <span class="toggle-label">Black</span>
+          </div>
+        </div>
+
+        <!-- Parental History Toggle -->
+        <div class="input-group">
+          <label class="input-label">Parental Diabetes History</label>
+          <div class="toggle-container">
+            <span class="toggle-label">No</span>
+            <label class="toggle-switch">
+              <input type="checkbox" id="parent-toggle" onchange="updateResults()">
+              <span class="toggle-slider"></span>
+            </label>
+            <span class="toggle-label">Yes</span>
+          </div>
+        </div>
+      </div>
+      
+      <div class="mt-5 p-4 rounded-lg bg-gray-50 text-center">
+        <div class="text-sm text-gray-600 mb-1">8-Year Diabetes Risk</div>
+        <div id="prob" class="text-4xl font-bold text-red-600">—%</div>
+      </div>
+    </div>
+  </div>
+
+<script>
+(function(){
+  // --- Model Coefficients from the ARIC Study (Schmidt et al. 2005) ---
+  const COEFF = {
+    intercept: -9.9808,
+    age: 0.0173,
+    race: 0.4433,        // Black (1) vs Other (0)
+    parentHist: 0.4981,
+    sbp: 0.0111,
+    waist: 0.0273,       // cm
+    height: -0.0326,     // cm
+    fastGlu: 1.5849,     // mmol/L
+    cholHDL: -0.4718,    // mmol/L
+    cholTri: 0.242       // mmol/L
+  };
+
+  // Unit Conversions
+  const CONVERSIONS = {
+    heightToCm: 2.54,
+    waistToCm: 2.54,
+    gluToMmol: 1 / 18,
+    hdlToMmol: 1 / 38.67,
+    triToMmol: 1 / 88.57
+  };
+
+  // Slider Ranges
+  const RANGES = {
+    age: { us: [20, 80, 1], si: [20, 80, 1] },
+    sbp: { us: [90, 200, 1], si: [90, 200, 1] },
+    height: { us: [48, 84, 1], si: [122, 213, 1] },
+    waist: { us: [25, 60, 1], si: [64, 152, 1] },
+    fg: { us: [50, 300, 1], si: [2.8, 16.7, 0.1] },
+    hdl: { us: [20, 100, 1], si: [0.5, 2.6, 0.1] },
+    trig: { us: [50, 500, 1], si: [0.6, 5.6, 0.1] }
+  };
+
+  // State
+  let useMetric = false;
+
+  // Helper function to get elements
+  const el = id => document.getElementById(id);
+
+  // Update slider from input
+  window.updateSlider = function(field) {
+    const slider = el(`${field}-slider`);
+    const input = el(`${field}-value`);
+    let val = parseFloat(input.value);
+    
+    const min = parseFloat(slider.min), max = parseFloat(slider.max);
+    if (val < min) val = min;
+    if (val > max) val = max;
+    
+    slider.value = val;
+    input.value = val;
+    
+    updateSliderFill(field);
+    updateResults();
+  };
+
+  // Update input from slider
+  window.updateValue = function(field) {
+    const slider = el(`${field}-slider`);
+    const input = el(`${field}-value`);
+    input.value = slider.value;
+    updateSliderFill(field);
+    updateResults();
+  };
+
+  function updateSliderFill(field) {
+    const slider = el(`${field}-slider`);
+    const fill = el(`${field}-fill`);
+    if (!slider || !fill) return;
+    
+    const min = parseFloat(slider.min), max = parseFloat(slider.max), val = parseFloat(slider.value);
+    const percent = ((val - min) / (max - min)) * 100;
+    fill.style.width = `${percent}%`;
+  }
+
+  // Toggle units
+  window.toggleUnits = function() {
+    const wasMetric = useMetric;
+    useMetric = el('unit-toggle').checked;
+    
+    if (wasMetric !== useMetric) {
+      el('unit-label-us').style.fontWeight = useMetric ? '400' : '700';
+      el('unit-label-si').style.fontWeight = useMetric ? '700' : '400';
+      
+      // First update ranges, then convert values so slider accepts new values
+      updateSliderRanges();
+      convertValues();
+      updateUnitLabels();
+      updateAxisLabels();
+      
+      ['age', 'sbp', 'height', 'waist', 'fg', 'hdl', 'trig'].forEach(updateSliderFill);
+    }
+    
+    updateResults();
+  };
+
+  function convertValues() {
+    const fields = [
+      { id: 'height', conv: CONVERSIONS.heightToCm, isLength: true },
+      { id: 'waist', conv: CONVERSIONS.waistToCm, isLength: true },
+      { id: 'fg', conv: CONVERSIONS.gluToMmol, isLength: false },
+      { id: 'hdl', conv: CONVERSIONS.hdlToMmol, isLength: false },
+      { id: 'trig', conv: CONVERSIONS.triToMmol, isLength: false }
+    ];
+    
+    const mode = useMetric ? 'si' : 'us';
+    
+    fields.forEach(field => {
+      const slider = el(`${field.id}-slider`);
+      const input = el(`${field.id}-value`);
+      let val = parseFloat(input.value) || 0;
+      
+      if (useMetric) {
+        val = val * field.conv;
+      } else {
+        val = val / field.conv;
+      }
+      
+      const range = RANGES[field.id][mode];
+      if (val < range[0]) val = range[0];
+      if (val > range[1]) val = range[1];
+      
+      if (range[2] < 1) {
+        val = parseFloat(val.toFixed(1));
+      } else {
+        val = Math.round(val);
+      }
+      
+      input.value = val;
+      slider.value = val;
+    });
+  }
+
+  function updateSliderRanges() {
+    const mode = useMetric ? 'si' : 'us';
+    Object.keys(RANGES).forEach(field => {
+      const slider = el(`${field}-slider`);
+      const input = el(`${field}-value`);
+      const range = RANGES[field][mode];
+      
+      if (slider && range) {
+        slider.min = range[0];
+        slider.max = range[1];
+        slider.step = range[2];
+        input.min = range[0];
+        input.max = range[1];
+        input.step = range[2];
+      }
+    });
+  }
+
+  function updateUnitLabels() {
+    if (useMetric) {
+      el('height-unit').textContent = '(cm)';
+      el('waist-unit').textContent = '(cm)';
+      el('fg-unit').textContent = '(mmol/L)';
+      el('hdl-unit').textContent = '(mmol/L)';
+      el('trig-unit').textContent = '(mmol/L)';
+      el('height-value-unit').textContent = 'cm';
+      el('waist-value-unit').textContent = 'cm';
+      el('fg-value-unit').textContent = 'mmol/L';
+      el('hdl-value-unit').textContent = 'mmol/L';
+      el('trig-value-unit').textContent = 'mmol/L';
+    } else {
+      el('height-unit').textContent = '(in)';
+      el('waist-unit').textContent = '(in)';
+      el('fg-unit').textContent = '(mg/dL)';
+      el('hdl-unit').textContent = '(mg/dL)';
+      el('trig-unit').textContent = '(mg/dL)';
+      el('height-value-unit').textContent = 'in';
+      el('waist-value-unit').textContent = 'in';
+      el('fg-value-unit').textContent = 'mg/dL';
+      el('hdl-value-unit').textContent = 'mg/dL';
+      el('trig-value-unit').textContent = 'mg/dL';
+    }
+  }
+
+  function updateAxisLabels() {
+    const mode = useMetric ? 'si' : 'us';
+    
+    // Height
+    const hRange = RANGES.height[mode];
+    el('height-min').textContent = hRange[0];
+    el('height-mid').textContent = Math.round((hRange[0] + hRange[1]) / 2);
+    el('height-max').textContent = hRange[1];
+    
+    // Waist
+    const wRange = RANGES.waist[mode];
+    el('waist-min').textContent = wRange[0];
+    el('waist-mid').textContent = Math.round((wRange[0] + wRange[1]) / 2);
+    el('waist-max').textContent = wRange[1];
+    
+    // Glucose
+    const gRange = RANGES.fg[mode];
+    el('fg-min').textContent = useMetric ? gRange[0].toFixed(1) : gRange[0];
+    el('fg-mid').textContent = useMetric ? ((gRange[0] + gRange[1]) / 2).toFixed(1) : Math.round((gRange[0] + gRange[1]) / 2);
+    el('fg-max').textContent = useMetric ? gRange[1].toFixed(1) : gRange[1];
+    
+    // Triglycerides
+    const tRange = RANGES.trig[mode];
+    el('trig-min').textContent = useMetric ? tRange[0].toFixed(1) : tRange[0];
+    el('trig-mid').textContent = useMetric ? ((tRange[0] + tRange[1]) / 2).toFixed(1) : Math.round((tRange[0] + tRange[1]) / 2);
+    el('trig-max').textContent = useMetric ? tRange[1].toFixed(1) : tRange[1];
+  }
+
+  // Read all values from form fields
+  function readInputs() {
+    let height = parseFloat(el('height-value').value) || 0;
+    let waist = parseFloat(el('waist-value').value) || 0;
+    let fg = parseFloat(el('fg-value').value) || 0;
+    let hdl = parseFloat(el('hdl-value').value) || 0;
+    let trig = parseFloat(el('trig-value').value) || 0;
+    
+    // Convert to SI units if in US mode
+    if (!useMetric) {
+      height = height * CONVERSIONS.heightToCm;
+      waist = waist * CONVERSIONS.waistToCm;
+      fg = fg * CONVERSIONS.gluToMmol;
+      hdl = hdl * CONVERSIONS.hdlToMmol;
+      trig = trig * CONVERSIONS.triToMmol;
+    }
+    
+    return {
+      age: parseFloat(el('age-value').value) || 0,
+      fg: fg,
+      sbp: parseFloat(el('sbp-value').value) || 0,
+      waist: waist,
+      height: height,
+      hdl: hdl,
+      trig: trig,
+      race: el('race-toggle').checked ? 1 : 0,
+      parent: el('parent-toggle').checked ? 1 : 0
+    };
+  }
+
+  // Calculate Logit Score
+  function calculateScore(v) {
+    return COEFF.intercept
+      + (COEFF.age * v.age)
+      + (COEFF.race * v.race)
+      + (COEFF.parentHist * v.parent)
+      + (COEFF.sbp * v.sbp)
+      + (COEFF.waist * v.waist)
+      + (COEFF.height * v.height)
+      + (COEFF.fastGlu * v.fg)
+      + (COEFF.cholHDL * v.hdl)
+      + (COEFF.cholTri * v.trig);
+  }
+
+  // Logistic Function (Sigmoid)
+  function logistic(x) {
+    return 1 / (1 + Math.exp(-x));
+  }
+
+  // Main function to update results
+  window.updateResults = function() {
+    const values = readInputs();
+    const score = calculateScore(values);
+    const probability = logistic(score);
+    el('prob').textContent = (probability * 100).toFixed(1) + '%';
+  };
+
+  // Initialize on page load
+  document.addEventListener('DOMContentLoaded', function() {
+    ['age', 'sbp', 'height', 'waist', 'fg', 'hdl', 'trig'].forEach(updateSliderFill);
+    updateResults();
+  });
+})();
+</script>
+
+</body>
+</html>
