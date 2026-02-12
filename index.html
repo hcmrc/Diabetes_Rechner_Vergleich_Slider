@@ -150,10 +150,15 @@
     .slider-segment.danger { background: var(--danger); }
     .slider-labels {
         display: flex;
-        justify-content: space-between;
         margin-top: 3px;
         font-size: 10px;
         color: var(--text-muted);
+    }
+    .slider-labels span {
+        text-align: center;
+    }
+    .slider-labels-numeric {
+        justify-content: space-between;
     }
     .value-display {
         display: flex;
@@ -179,6 +184,20 @@
         font-size: 11px;
         color: #64748b;
     }
+    .btn-reset {
+        padding: 4px 12px;
+        font-size: 12px;
+        font-weight: 500;
+        color: #fff;
+        background-color: #6c757d;
+        border: none;
+        border-radius: 5px;
+        cursor: pointer;
+        transition: background-color 0.2s;
+    }
+    .btn-reset:hover {
+        background-color: #5c636a;
+    }
   </style>
 </head>
 <body class="p-4">
@@ -186,8 +205,8 @@
     <div class="card p-5 shadow bg-white">
       <div class="flex justify-between items-center mb-4">
         <h1 class="text-xl font-bold">Diabetes Risk Calculator</h1>
-        <!-- Unit Toggle inline -->
-        <div class="flex items-center gap-2 text-sm">
+        <!-- Unit Toggle and Reset inline -->
+        <div class="flex items-center gap-4 text-sm">
           <span>Units:</span>
           <div class="toggle-container">
             <span class="toggle-label" id="unit-label-us" style="font-weight: 700;">US</span>
@@ -197,6 +216,7 @@
             </label>
             <span class="toggle-label" id="unit-label-si">SI</span>
           </div>
+          <button id="resetBtn" type="button" class="btn-reset">Reset</button>
         </div>
       </div>
      
@@ -205,12 +225,12 @@
         <div class="input-group">
           <label class="input-label">Age</label>
           <div class="slider-container">
-            <input type="range" id="age-slider" min="20" max="80" value="54" class="slider" oninput="updateValue('age')">
+            <input type="range" id="age-slider" min="20" max="80" value="50" class="slider" oninput="updateValue('age')">
             <div class="slider-track"><div class="slider-fill" id="age-fill"></div></div>
-            <div class="slider-labels"><span>20</span><span>50</span><span>80</span></div>
+            <div class="slider-labels slider-labels-numeric"><span>20</span><span>50</span><span>80</span></div>
           </div>
           <div class="value-display">
-            <input type="number" id="age-value" value="54" min="20" max="80" onchange="updateSlider('age')">
+            <input type="number" id="age-value" value="50" min="20" max="80" onchange="updateSlider('age')">
             <span class="value-unit">years</span>
           </div>
         </div>
@@ -219,16 +239,16 @@
         <div class="input-group">
           <label class="input-label">Glucose <span class="unit-label" id="fg-unit">(mg/dL)</span></label>
           <div class="slider-container">
-            <input type="range" id="fg-slider" min="50" max="300" value="97" step="1" class="slider" oninput="updateValue('fg')">
+            <input type="range" id="fg-slider" min="50" max="300" value="95" step="1" class="slider" oninput="updateValue('fg')">
             <div class="slider-track">
               <div class="slider-segment safe" style="flex: 50"></div>
               <div class="slider-segment alert" style="flex: 26"></div>
               <div class="slider-segment danger" style="flex: 174"></div>
             </div>
-            <div class="slider-labels"><span id="fg-min">50</span><span id="fg-mid">175</span><span id="fg-max">300</span></div>
+            <div class="slider-labels"><span style="flex: 50">Normal</span><span style="flex: 26">Prediabetes</span><span style="flex: 174">Diabetes</span></div>
           </div>
           <div class="value-display">
-            <input type="number" id="fg-value" value="97" step="1" onchange="updateSlider('fg')">
+            <input type="number" id="fg-value" value="95" step="1" onchange="updateSlider('fg')">
             <span class="value-unit" id="fg-value-unit">mg/dL</span>
           </div>
         </div>
@@ -237,17 +257,17 @@
         <div class="input-group">
           <label class="input-label">Blood Pressure <span class="unit-label">(mmHg)</span></label>
           <div class="slider-container">
-            <input type="range" id="sbp-slider" min="90" max="200" value="120" class="slider" oninput="updateValue('sbp')">
+            <input type="range" id="sbp-slider" min="80" max="220" value="120" class="slider" oninput="updateValue('sbp')">
             <div class="slider-track">
-              <div class="slider-segment safe" style="flex: 30"></div>
-              <div class="slider-segment alert" style="flex: 20"></div>
-              <div class="slider-segment warning" style="flex: 20"></div>
-              <div class="slider-segment danger" style="flex: 40"></div>
+              <div class="slider-segment safe" style="flex: 40"></div>
+              <div class="slider-segment alert" style="flex: 10"></div>
+              <div class="slider-segment warning" style="flex: 10"></div>
+              <div class="slider-segment danger" style="flex: 80"></div>
             </div>
-            <div class="slider-labels"><span>Normal</span><span>Pre-HTN</span><span>Stage 1</span><span>Stage 2</span></div>
+            <div class="slider-labels"><span style="flex: 40">Normal</span><span style="flex: 10; text-align: right; padding-right: 2px">Elev-ated</span><span style="flex: 10; text-align: left; padding-left: 3px; white-space: nowrap">Stage&nbsp;1</span><span style="flex: 80">Stage 2</span></div>
           </div>
           <div class="value-display">
-            <input type="number" id="sbp-value" value="120" min="90" max="200" onchange="updateSlider('sbp')">
+            <input type="number" id="sbp-value" value="120" onchange="updateSlider('sbp')">
             <span class="value-unit">mmHg</span>
           </div>
         </div>
@@ -256,15 +276,15 @@
         <div class="input-group">
           <label class="input-label">Waist Size <span class="unit-label" id="waist-unit">(in)</span></label>
           <div class="slider-container">
-            <input type="range" id="waist-slider" min="25" max="60" value="37" step="1" class="slider" oninput="updateValue('waist')">
+            <input type="range" id="waist-slider" min="25" max="60" value="36" step="1" class="slider" oninput="updateValue('waist')">
             <div class="slider-track">
               <div class="slider-segment safe" style="flex: 12"></div>
               <div class="slider-segment danger" style="flex: 23"></div>
             </div>
-            <div class="slider-labels"><span id="waist-min">25</span><span id="waist-mid">42</span><span id="waist-max">60</span></div>
+            <div class="slider-labels slider-labels-numeric"><span id="waist-min">25</span><span id="waist-mid">42</span><span id="waist-max">60</span></div>
           </div>
           <div class="value-display">
-            <input type="number" id="waist-value" value="37" step="1" onchange="updateSlider('waist')">
+            <input type="number" id="waist-value" value="36" step="1" onchange="updateSlider('waist')">
             <span class="value-unit" id="waist-value-unit">in</span>
           </div>
         </div>
@@ -275,7 +295,7 @@
           <div class="slider-container">
             <input type="range" id="height-slider" min="48" max="84" value="66" step="1" class="slider" oninput="updateValue('height')">
             <div class="slider-track"><div class="slider-fill" id="height-fill"></div></div>
-            <div class="slider-labels"><span id="height-min">48</span><span id="height-mid">66</span><span id="height-max">84</span></div>
+            <div class="slider-labels slider-labels-numeric"><span id="height-min">48</span><span id="height-mid">66</span><span id="height-max">84</span></div>
           </div>
           <div class="value-display">
             <input type="number" id="height-value" value="66" step="1" onchange="updateSlider('height')">
@@ -289,11 +309,11 @@
           <div class="slider-container">
             <input type="range" id="hdl-slider" min="20" max="100" value="50" step="1" class="slider" oninput="updateValue('hdl')">
             <div class="slider-track">
-              <div class="slider-segment danger" style="flex: 20"></div>
-              <div class="slider-segment alert" style="flex: 20"></div>
-              <div class="slider-segment safe" style="flex: 40"></div>
+              <div class="slider-segment danger" style="flex: 15"></div>
+              <div class="slider-segment alert" style="flex: 5"></div>
+              <div class="slider-segment safe" style="flex: 60"></div>
             </div>
-            <div class="slider-labels"><span>Low</span><span>Borderline</span><span>Good</span></div>
+            <div class="slider-labels"><span style="flex: 15">Very-Low</span><span style="flex: 5; text-align: left; padding-left: 3px">Low</span><span style="flex: 60">Normal</span></div>
           </div>
           <div class="value-display">
             <input type="number" id="hdl-value" value="50" step="1" onchange="updateSlider('hdl')">
@@ -308,10 +328,10 @@
             <input type="range" id="trig-slider" min="50" max="500" value="150" step="1" class="slider" oninput="updateValue('trig')">
             <div class="slider-track">
               <div class="slider-segment safe" style="flex: 100"></div>
-              <div class="slider-segment alert" style="flex: 50"></div>
+              <div class="slider-segment warning" style="flex: 50"></div>
               <div class="slider-segment danger" style="flex: 300"></div>
             </div>
-            <div class="slider-labels"><span id="trig-min">50</span><span id="trig-mid">275</span><span id="trig-max">500</span></div>
+            <div class="slider-labels"><span style="flex: 100">Normal</span><span style="flex: 50">Borderline High</span><span style="flex: 300">High</span></div>
           </div>
           <div class="value-display">
             <input type="number" id="trig-value" value="150" step="1" onchange="updateSlider('trig')">
@@ -347,7 +367,7 @@
       </div>
       
       <div class="mt-5 p-4 rounded-lg bg-gray-50 text-center">
-        <div class="text-sm text-gray-600 mb-1">8-Year Diabetes Risk</div>
+        <div class="text-sm text-gray-600 mb-1">9-Year Diabetes Risk</div>
         <div id="prob" class="text-4xl font-bold text-red-600">—%</div>
       </div>
     </div>
@@ -381,7 +401,7 @@
   // Slider Ranges
   const RANGES = {
     age: { us: [20, 80, 1], si: [20, 80, 1] },
-    sbp: { us: [90, 200, 1], si: [90, 200, 1] },
+    sbp: { us: [80, 220, 1], si: [80, 220, 1] },
     height: { us: [48, 84, 1], si: [122, 213, 1] },
     waist: { us: [25, 60, 1], si: [64, 152, 1] },
     fg: { us: [50, 300, 1], si: [2.8, 16.7, 0.1] },
@@ -538,27 +558,21 @@
     
     // Height
     const hRange = RANGES.height[mode];
-    el('height-min').textContent = hRange[0];
-    el('height-mid').textContent = Math.round((hRange[0] + hRange[1]) / 2);
-    el('height-max').textContent = hRange[1];
+    const heightMin = el('height-min');
+    const heightMid = el('height-mid');
+    const heightMax = el('height-max');
+    if (heightMin) heightMin.textContent = hRange[0];
+    if (heightMid) heightMid.textContent = Math.round((hRange[0] + hRange[1]) / 2);
+    if (heightMax) heightMax.textContent = hRange[1];
     
     // Waist
     const wRange = RANGES.waist[mode];
-    el('waist-min').textContent = wRange[0];
-    el('waist-mid').textContent = Math.round((wRange[0] + wRange[1]) / 2);
-    el('waist-max').textContent = wRange[1];
-    
-    // Glucose
-    const gRange = RANGES.fg[mode];
-    el('fg-min').textContent = useMetric ? gRange[0].toFixed(1) : gRange[0];
-    el('fg-mid').textContent = useMetric ? ((gRange[0] + gRange[1]) / 2).toFixed(1) : Math.round((gRange[0] + gRange[1]) / 2);
-    el('fg-max').textContent = useMetric ? gRange[1].toFixed(1) : gRange[1];
-    
-    // Triglycerides
-    const tRange = RANGES.trig[mode];
-    el('trig-min').textContent = useMetric ? tRange[0].toFixed(1) : tRange[0];
-    el('trig-mid').textContent = useMetric ? ((tRange[0] + tRange[1]) / 2).toFixed(1) : Math.round((tRange[0] + tRange[1]) / 2);
-    el('trig-max').textContent = useMetric ? tRange[1].toFixed(1) : tRange[1];
+    const waistMin = el('waist-min');
+    const waistMid = el('waist-mid');
+    const waistMax = el('waist-max');
+    if (waistMin) waistMin.textContent = wRange[0];
+    if (waistMid) waistMid.textContent = Math.round((wRange[0] + wRange[1]) / 2);
+    if (waistMax) waistMax.textContent = wRange[1];
   }
 
   // Read all values from form fields
@@ -618,10 +632,62 @@
     el('prob').textContent = (probability * 100).toFixed(1) + '%';
   };
 
+  // Default values for reset
+  const DEFAULTS = {
+    age: 50,
+    sbp: 120,
+    height: { us: 66, si: 168 },
+    waist: { us: 36, si: 91 },
+    fg: { us: 95, si: 5.3 },
+    hdl: { us: 50, si: 1.3 },
+    trig: { us: 150, si: 1.7 },
+    race: false,
+    parent: false
+  };
+
+  // Reset function
+  window.resetToDefaults = function() {
+    // Reset unit toggle to US
+    el('unit-toggle').checked = false;
+    useMetric = false;
+    el('unit-label-us').style.fontWeight = '700';
+    el('unit-label-si').style.fontWeight = '400';
+    
+    // Update slider ranges and labels to US
+    updateSliderRanges();
+    updateUnitLabels();
+    updateAxisLabels();
+
+    // Reset all values to defaults (US units)
+    el('age-slider').value = DEFAULTS.age;
+    el('age-value').value = DEFAULTS.age;
+    el('sbp-slider').value = DEFAULTS.sbp;
+    el('sbp-value').value = DEFAULTS.sbp;
+    el('height-slider').value = DEFAULTS.height.us;
+    el('height-value').value = DEFAULTS.height.us;
+    el('waist-slider').value = DEFAULTS.waist.us;
+    el('waist-value').value = DEFAULTS.waist.us;
+    el('fg-slider').value = DEFAULTS.fg.us;
+    el('fg-value').value = DEFAULTS.fg.us;
+    el('hdl-slider').value = DEFAULTS.hdl.us;
+    el('hdl-value').value = DEFAULTS.hdl.us;
+    el('trig-slider').value = DEFAULTS.trig.us;
+    el('trig-value').value = DEFAULTS.trig.us;
+    el('race-toggle').checked = DEFAULTS.race;
+    el('parent-toggle').checked = DEFAULTS.parent;
+
+    // Update slider fills
+    ['age', 'sbp', 'height', 'waist', 'fg', 'hdl', 'trig'].forEach(updateSliderFill);
+    updateResults();
+  };
+
   // Initialize on page load
   document.addEventListener('DOMContentLoaded', function() {
     ['age', 'sbp', 'height', 'waist', 'fg', 'hdl', 'trig'].forEach(updateSliderFill);
     updateResults();
+    
+    // Add reset button event listener
+    el('resetBtn').addEventListener('click', resetToDefaults);
   });
 })();
 </script>
